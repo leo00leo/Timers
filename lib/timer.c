@@ -3,7 +3,7 @@
 int volatile ovf=0; // Variable para sumar los overflows acumulados.
 
 void timer_init(){
-    RCC -> APB1ENR |= RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
+    RCC->APB1ENR|=RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
     TIM2->CR1&~(TIM_CR1_CEN); //Detiene el contador para configurarlo.
     TIM2->PSC=7; //Carga PSC para lograr 1 MHz.
     TIM2->ARR=0XFFFF; //Valor máximo antes de overflow.
@@ -15,7 +15,7 @@ void timer_init(){
     TIM2->CR1|=TIM_CR1_CEN; //Arranca el contador con CEN.
 }
 void delay_init(){
-    RCC -> APB1ENR |= RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
+    RCC->APB1ENR|=RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
     TIM2->CR1&~(TIM_CR1_CEN); //Detiene el contador para configurarlo.
     TIM2->PSC=7; //Carga PSC para lograr 1 MHz.
     TIM2->ARR=0XFFFF; //Valor máximo antes de overflow.
@@ -24,15 +24,21 @@ void delay_init(){
     TIM2->CR1|=TIM_CR1_CEN; //Arranca el contador con CEN.
 }
 uint32_t timer_millis(){
-    RCC -> APB1ENR |= RCC_APB1ENR_TIM2EN; //Habilita clock del timer.    
+    RCC->APB1ENR|=RCC_APB1ENR_TIM2EN; //Habilita clock del timer.    
     TIM2->CR1&~(TIM_CR1_CEN); //Detiene el contador para configurarlo.
     TIM2->PSC=7; //Carga PSC para lograr 1 MHz.
     TIM2->ARR=0XFFFF; //Valor máximo antes de overflow.
     TIM2->CNT=0; //Reinicia CNT.
-    return ((TIM2->CNT+ovf)/1000); //Devuelve el valor 
+    return((TIM2->CNT+ovf)/1000); //Devuelve el valor. 
+}
+void TIM2_IRQhandler(){
+        if(TIM2->SR&TIM_SR_UIF){ // Si se llego al overflow:
+            TIM2->SR&=~TIM_SR_UIF; 
+            ovf+=(0XFFFF+1); // La variable ovf toma la vuelta del overflow y lo devuelve con el mismo valor pero con uno mas.
+        }
 }
 void delay_us(uint32_t us){
-    RCC-> APB1ENR |= RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
+    RCC->APB1ENR|=RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
     TIM2->CR1&~(TIM_CR1_CEN); //Detiene el contador para configurarlo.
     TIM2->CNT=0; //Se reinicia el contador.
     TIM2->CR1|=TIM_CR1_CEN; //Arranca el contador.
@@ -40,7 +46,7 @@ void delay_us(uint32_t us){
     }
 }
 void delay_ms(uint32_t ms){
-    RCC-> APB1ENR |= RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
+    RCC->APB1ENR|=RCC_APB1ENR_TIM2EN; //Habilita clock del timer.
     TIM2->CR1&~(TIM_CR1_CEN); //Detiene el contador para configurarlo.
     TIM2->CNT=0; //Se reinicia el contador.
     TIM2->CR1|=TIM_CR1_CEN; //Arranca el contador.
@@ -50,14 +56,8 @@ void delay_ms(uint32_t ms){
         p++;    
     }
 }
-void TIM2_IRQhandler(){
-        if(TIM2->SR&TIM_SR_UIF){ // Si se llego al overflow:
-            TIM2->SR&=~TIM_SR_UIF; 
-            ovf+=(0XFFFF+1); // La variable ovf toma la vuelta del overflow y lo devuelve con el mismo valor pero con uno mas
-        }
-}
 void pwm_init(uint8_t canal, uint32_t frec){
-    RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN;
+    RCC->APB1ENR|=RCC_APB1ENR_TIM3EN;
     switch(canal){
 
     case 1:
@@ -98,10 +98,10 @@ void pwm_init(uint8_t canal, uint32_t frec){
     default:
     break;
 
-    TIM3->PSC=7;
+    TIM3->PSC=7; //Ajustamos el Prescaler a 7 para tener una frecuencia de 1MHz.
     TIM3->ARR=((1000000/frec)-1); 
-    TIM3->EGR|=TIM_EGR_UG;
-    TIM3->CR1|=TIM_CR1_CEN;
+    TIM3->EGR|=TIM_EGR_UG; //Aplicar la configuración nueva del timer antes de arrancar.
+    TIM3->CR1|=TIM_CR1_CEN; //Arranca el contador con CEN.
     }
 }
 void pwm(uint8_t canal , uint8_t duty){
